@@ -320,7 +320,6 @@ def main():
     alignment_counts = {}
     for sample in ["High fluorescence", "Low fluorescence"]:
         logger.info(f"Processing {sample}")
-        print(sample)
         alignment_counts_file = process_sample(
             config[sample]["Sample ID"],
             config[sample]["R1 filename"],

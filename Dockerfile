@@ -30,6 +30,7 @@ RUN cd samtools-1.21 && ./configure && make && make install
 
 # Add to path
 RUN echo "export PATH=/tools:/tools/FastQC:\$PATH"  >> ~/.bashrc
+ENV PATH=/tools:/tools/FastQC:$PATH
 
 # Cleanup
 RUN rm -r FLASH* samtools*
