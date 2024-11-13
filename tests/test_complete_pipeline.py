@@ -2,7 +2,7 @@ import os
 import shutil
 import tempfile
 import pytest
-from run_pipeline import main
+from src.run_pipeline import main
 
 
 @pytest.fixture

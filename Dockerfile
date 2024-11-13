@@ -38,6 +38,10 @@ RUN rm -r FLASH* samtools*
 RUN pip install --upgrade pip && \
     pip install pandas==2.2.3 pytest==8.3.3
 
+# Copy pipeline code and tests
+COPY src /src
+COPY tests /tests
+
 # Create reference indices
 COPY create_reference_indices.sh /
 COPY sp_library_fasta /sp_library_fasta
