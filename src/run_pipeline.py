@@ -216,6 +216,8 @@ def process_sample(sample_id, r1_file, r2_file, output_dirs, sp_library):
     """Process a single sample through the pipeline."""
     if sp_library in ["R2B", "integration_test"]:
         kozak_seq = "GCTAGCCCACC"
+    elif sp_library in ["v2"]:
+        kozak_seq = "GCCGCCACC"
     else:
         raise ValueError(f"Unknown SP library: {sp_library}")
 
