@@ -40,8 +40,7 @@ RUN pip install --upgrade pip && \
     pip install pandas==2.2.3 pytest==8.3.3
 
 # Copy pipeline code and tests
-COPY src /src
-COPY tests /tests
+COPY src/ /
 
 # Create reference indices
 COPY create_reference_indices.sh /
