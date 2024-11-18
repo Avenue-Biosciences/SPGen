@@ -1,6 +1,36 @@
 # NGS data analysis pipeline
 
+### Overview
+
+This repo contains a complete NGS data analysis pipeline for our amplicon sequencing. For detailed documentation on how to use the pipeline, please see the [Notion page](https://www.notion.so/NGS-data-analysis-pipeline-13c8d1326f288056a743d2204cc3dde8)
+
+
+The complete logic for the pipeline is in the `src/run_pipeline.py` file.
+
+For now, the Python script calls command line tools directly, instead of using their Python API. This is done to maintain easy compatibility with running commands on the command line. All the tools except Flash seem to have a Python API.
+
+
+For now, now `requirements.txt` file is used since there are only 2 dependencies: `pandas` and `pytest`.
+
+### Docker image
+
+The pipeline is dockerized. To build the image, simply run
+
+```
+docker build -t ngs-pipeline:tag .
+```
+
+### Testing the pipeline
+
+To test the pipeline, run
+
+```
+docker run --rm ngs-pipeline:tag bash -c "PYTHONPATH=. pytest tests"
+```
+
 ### Installation of tools locally
+
+If for some reason you want to install the tools locally, here are the instructions:
 
 `bowtie2`, `fastqc` and `samtools` can be installed with Homebrew: 
 
