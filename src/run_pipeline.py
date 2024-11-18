@@ -177,8 +177,8 @@ def remove_filler_sequence(sample_id, input_file, output_dir, kozak_seq):
     """Remove filler sequence from the merged reads."""
     logger.info("Removing filler sequence")
 
-    output = f"{output_dir}/{sample_id}_reads_no_trimmer.fastq"
-    log_output = f"{output_dir}/{sample_id}_cutadapt_filler.txt"
+    output = f"{output_dir}/{sample_id}_reads_no_filler.fastq"
+    log_output = f"{output_dir}/{sample_id}_cutadapt_filler.log"
 
     run_command(
         [
@@ -198,7 +198,7 @@ def remove_filler_sequence(sample_id, input_file, output_dir, kozak_seq):
     stats = {}
     with open(log_output) as f:
         for line in f:
-            if "Reads with adapter:" in line:
+            if "Reads with adapters:" in line:
                 stats["Reads with filler sequence"] = int(
                     line.split()[-2].replace(",", "")
                 )
@@ -209,18 +209,20 @@ def remove_filler_sequence(sample_id, input_file, output_dir, kozak_seq):
     return output, pd.DataFrame(stats, index=[sample_id])
 
 
-def remove_restriction_site(sample_id, input_file, output_dir):
+def remove_restriction_site(sample_id, input_file, min_length, output_dir):
     """Remove MLuI restriction site from the reads."""
     logger.info("Removing MLuI restriction site and mature protein chain")
 
     output = f"{output_dir}/{sample_id}_reads_final.fastq"
-    log_output = f"{output_dir}/{sample_id}_cutadapt_restriction.txt"
+    log_output = f"{output_dir}/{sample_id}_cutadapt_restriction.log"
 
     run_command(
         [
             "cutadapt",
             "-e",
             "0",
+            "-m",
+            str(min_length),
             "-a",
             "ACGCGT",
             input_file,
@@ -234,11 +236,18 @@ def remove_restriction_site(sample_id, input_file, output_dir):
     stats = {}
     with open(log_output) as f:
         for line in f:
-            if "Reads with adapter:" in line:
+            if "Reads with adapters:" in line:
                 stats["Reads with restriction site"] = int(
                     line.split()[-2].replace(",", "")
                 )
                 stats["Reads with restriction site %"] = float(
+                    line.split()[-1].strip("()%")
+                )
+            elif "Reads written (passing filters):" in line:
+                stats["Reads retained after restriction site removal"] = int(
+                    line.split()[-2].replace(",", "")
+                )
+                stats["Reads retained after restriction site removal %"] = float(
                     line.split()[-1].strip("()%")
                 )
 
@@ -335,8 +344,10 @@ def process_sample(sample_id, r1_file, r2_file, output_dirs, sp_library):
     """Process a single sample through the pipeline."""
     if sp_library in ["R2B", "R2B_full", "integration_test"]:
         kozak_seq = "GCTAGCCCACC"
+        min_length = 21
     elif sp_library in ["v2"]:
         kozak_seq = "GCCGCCACC"
+        min_length = 21
     else:
         raise ValueError(f"Unknown SP library: {sp_library}")
 
@@ -360,7 +371,7 @@ def process_sample(sample_id, r1_file, r2_file, output_dirs, sp_library):
 
     # Remove MLuI restriction site
     restriction_removed_file, restriction_stats = remove_restriction_site(
-        sample_id, filler_removed_file, output_dirs["fillerout"]
+        sample_id, filler_removed_file, min_length, output_dirs["fillerout"]
     )
 
     # Alignment steps
@@ -417,7 +428,12 @@ def main():
         sys.exit(1)
 
     # Set up logging
-    logging.basicConfig(filename="run_pipeline.log", level=logging.INFO)
+    logging.basicConfig(
+        filename="run_pipeline.log",
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
     logger.info("Starting pipeline")
 
     # Define output directories
@@ -425,7 +441,7 @@ def main():
         "fastqcout": "1_fastqc_output",
         "adaptout": "2_adapter_removed",
         "flashout": "3_forward_reverse_reads_merged",
-        "fillerout": "4_filler_removed",
+        "fillerout": "4_filler_restriction_removed",
         "alignout": "5_alignments",
         "countout": "6_read_counts",
     }
