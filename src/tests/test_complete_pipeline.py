@@ -9,15 +9,10 @@ from run_pipeline import main
 def temp_test_dir():
     """Create a temporary directory for testing and clean it up afterward."""
     with tempfile.TemporaryDirectory() as temp_dir:
-        # Copy required input files to temp directory
-        input_files = [
-            "config.json",
-            "HFR1.fastq",
-            "HFR2.fastq",
-            "expected_read_counts.csv",
-        ]
-        for file in input_files:
-            shutil.copy(os.path.join("tests/complete_pipeline_files", file), temp_dir)
+        # Copy all files from complete_pipeline_files directory
+        source_dir = "tests/complete_pipeline_files"
+        for file in os.listdir(source_dir):
+            shutil.copy(os.path.join(source_dir, file), temp_dir)
 
         # Store original working directory
         original_dir = os.getcwd()

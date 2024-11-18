@@ -1,0 +1,21 @@
+
+HF (from A064)
+
+Q9BZM4
+2 reads
+Q16661
+1 read with broken sequence before the start codon, deletion of A in the Kozak sequence
+P36888
+2 reads, 1 modified in R1 (2nd codon 1st base C->G in R1, and the reverse in R2)
+Q9UIW2
+No reads
+
+LF (from A065)
+
+Q16661
+1 read, only contains part of the sequence in both R1 and R2 (both missing 6 codons from the end, but merging should be able to construct the full read)
+
+
+ATGGGCTGCAGGGCTGCATCAGGGCTCCTGCCAGGAGTGGCCGTGGTCCTCCTGCTGCTGCTGCAGAGCACACAGTCAGTCTACATCCAG
+
+CTGGATGTAGACTGACTGTGTGCTCTGCAGCAGCAGCAGGAGGACCACGGCCACTCCTGGCAGGAGCCCTGATGCAGCCCTGCAGCCCAT
