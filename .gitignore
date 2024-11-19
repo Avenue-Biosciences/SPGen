@@ -1,4 +1,5 @@
 __pycache__
+.pytest_cache
 test_run
 test_data
 .DS_Store

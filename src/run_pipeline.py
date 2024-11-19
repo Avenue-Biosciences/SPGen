@@ -24,15 +24,39 @@ def read_config(config_file):
     with open(config_file) as f:
         config = json.load(f)
 
+    required_fields = ["Replicates", "SP library"]
+    for field in required_fields:
+        if field not in config:
+            raise ValueError(
+                f"Error: {field} was not found. Please check the config file."
+            )
+
     # Validate values
-    required_fields = ["Sample ID", "R1 filename", "R2 filename"]
-    for sample_type in ["High fluorescence", "Low fluorescence"]:
-        for field in required_fields:
-            value = config[sample_type][field]
+    required_rep_fields = ["High fluorescence", "Low fluorescence"]
+    required_sample_fields = ["Sample ID", "R1 filename", "R2 filename"]
+    for i, replicate in enumerate(config["Replicates"]):
+        for field in required_rep_fields:
+            value = replicate[field]
             if not value:
                 raise ValueError(
-                    f"Error: {sample_type} {field} was not found. Please check the config file."
+                    f"Error: replicate {i} {field} was not found. Please check the config file."
                 )
+            for s_field in required_sample_fields:
+                value = replicate[field][s_field]
+                if not value:
+                    raise ValueError(
+                        f"Error: replicate {i} {field} {s_field} was not found. Please check the config file."
+                    )
+    # Check that all sample IDs are unique
+    sample_ids = [
+        replicate[sample]["Sample ID"]
+        for replicate in config["Replicates"]
+        for sample in ["High fluorescence", "Low fluorescence"]
+    ]
+    if len(sample_ids) != len(set(sample_ids)):
+        raise ValueError(
+            "Error: Duplicate sample IDs found. Please check the config file."
+        )
 
     return config
 
@@ -385,31 +409,32 @@ def process_sample(sample_id, r1_file, r2_file, output_dirs, sp_library):
     )
 
 
-def read_alignment_counts(filename):
+def read_alignment_counts(filename, label):
     """Read the alignment counts for a single sample."""
     df = pd.read_csv(
         filename,
         sep="\t",
         header=None,
-        names=["SP", "length", "count", "unmapped"],
+        names=["SP", "length", f"{label}", "unmapped"],
     )
-    df.loc[df["SP"] == "*", "count"] = df.loc[df["SP"] == "*", "unmapped"]
+    df.loc[df["SP"] == "*", f"{label}"] = df.loc[df["SP"] == "*", "unmapped"]
     df.loc[df["SP"] == "*", "SP"] = "unmapped"
     return df.drop(columns=["length", "unmapped"])
 
 
-def process_read_counts(hf_file, lf_file):
+def process_read_counts(files):
     """Process the read counts for the high and low fluorescence samples."""
     logger.info("Processing read counts")
 
-    hf_read_counts = read_alignment_counts(hf_file)
-    lf_read_counts = read_alignment_counts(lf_file)
+    read_counts = [read_alignment_counts(file, label) for label, file in files.items()]
 
-    # Merge the two dataframes
-    merged_read_counts = pd.merge(
-        hf_read_counts, lf_read_counts, on="SP", suffixes=["_hf", "_lf"]
-    )
-    merged_read_counts.columns = ["SP", "HF_count", "LF_count"]
+    # Start with the first dataframe
+    merged_read_counts = read_counts[0]
+
+    # Merge with remaining dataframes one by one
+    for df in read_counts[1:]:
+        merged_read_counts = pd.merge(merged_read_counts, df, on="SP")
+
     return merged_read_counts
 
 
@@ -427,6 +452,9 @@ def main():
         print(f"Error: Unable to change to directory '{abs_directory}'")
         sys.exit(1)
 
+    # Read and validate config
+    config = read_config("config.json")
+
     # Set up logging
     logging.basicConfig(
         filename="run_pipeline.log",
@@ -438,7 +466,7 @@ def main():
 
     # Define output directories
     output_dirs = {
-        "fastqcout": "1_fastqc_output",
+        "fastqcout": "1_fastqc",
         "adaptout": "2_adapter_removed",
         "flashout": "3_forward_reverse_reads_merged",
         "fillerout": "4_filler_restriction_removed",
@@ -452,32 +480,28 @@ def main():
     # Create output directories
     check_and_create_directories(output_dirs.values())
 
-    # Read and validate config
-    config = read_config("config.json")
-
     alignment_counts = {}
-    stats = {}
-    for sample in ["High fluorescence", "Low fluorescence"]:
-        logger.info(f"Processing {sample}")
-        alignment_counts_file, stats_sample = process_sample(
-            config[sample]["Sample ID"],
-            config[sample]["R1 filename"],
-            config[sample]["R2 filename"],
-            output_dirs,
-            config["SP library"],
-        )
-        alignment_counts[sample] = alignment_counts_file
-        stats[sample] = stats_sample
+    stats = []
+    for i, replicate in enumerate(config["Replicates"]):
+        for sample in ["High fluorescence", "Low fluorescence"]:
+            logger.info(f"Processing replicate {i+1} {sample}")
+            alignment_counts_file, stats_sample = process_sample(
+                replicate[sample]["Sample ID"],
+                replicate[sample]["R1 filename"],
+                replicate[sample]["R2 filename"],
+                output_dirs,
+                config["SP library"],
+            )
+            label = f"{'HF' if sample == 'High fluorescence' else 'LF'}{i+1}"
+            alignment_counts[label] = alignment_counts_file
+            stats.append(stats_sample)
 
-    full_stats = pd.concat(stats.values(), axis=0)
+    full_stats = pd.concat(stats, axis=0)
     full_stats.to_csv(f"{output_dirs['countout']}/stats.csv", index=True)
 
     # Process read counts
     logger.info("Processing read counts")
-    merged_read_counts = process_read_counts(
-        alignment_counts["High fluorescence"],
-        alignment_counts["Low fluorescence"],
-    )
+    merged_read_counts = process_read_counts(alignment_counts)
     # Write to file
     merged_read_counts.to_csv(f"{output_dirs['countout']}/read_counts.csv", index=False)
 

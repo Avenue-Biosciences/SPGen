@@ -1,13 +1,29 @@
 {
-    "High fluorescence": {
-        "Sample ID": "HF",
-        "R1 filename": "HFR1.fastq",
-        "R2 filename": "HFR2.fastq"
-    },
-    "Low fluorescence": {
-        "Sample ID": "LF",
-        "R1 filename": "LFR1.fastq",
-        "R2 filename": "LFR2.fastq"
-    },
+    "Replicates": [
+        {
+            "High fluorescence": {
+                "Sample ID": "HF_rep1",
+                "R1 filename": "HF_rep1_R1.fastq",
+                "R2 filename": "HF_rep1_R2.fastq"
+            },
+            "Low fluorescence": {
+                "Sample ID": "LF_rep1",
+                "R1 filename": "LFR1.fastq",
+                "R2 filename": "LFR2.fastq"
+            }
+        },
+        {
+            "High fluorescence": {
+                "Sample ID": "HF_rep2",
+                "R1 filename": "HF_rep2_R1.fastq",
+                "R2 filename": "HF_rep2_R2.fastq"
+            },
+            "Low fluorescence": {
+                "Sample ID": "LF_rep2",
+                "R1 filename": "LFR1.fastq",
+                "R2 filename": "LFR2.fastq"
+            }
+        }
+    ],
     "SP library": "integration_test"
 }

@@ -33,10 +33,10 @@ def test_complete_pipeline(temp_test_dir, monkeypatch):
 
     # Assert expected output directories exist
     expected_dirs = [
-        "1_fastqc_output",
+        "1_fastqc",
         "2_adapter_removed",
         "3_forward_reverse_reads_merged",
-        "4_filler_removed",
+        "4_filler_restriction_removed",
         "5_alignments",
         "6_read_counts",
     ]
