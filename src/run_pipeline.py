@@ -19,46 +19,46 @@ def check_and_create_directories(output_dirs):
         os.makedirs(dir_name)
 
 
-def read_config(config_file):
+def read_input(input_file):
     """Read and validate the configuration file."""
-    with open(config_file) as f:
-        config = json.load(f)
+    with open(input_file) as f:
+        input = json.load(f)
 
     required_fields = ["Replicates", "SP library"]
     for field in required_fields:
-        if field not in config:
+        if field not in input:
             raise ValueError(
-                f"Error: {field} was not found. Please check the config file."
+                f"Error: {field} was not found. Please check the input file."
             )
 
     # Validate values
     required_rep_fields = ["High fluorescence", "Low fluorescence"]
     required_sample_fields = ["Sample ID", "R1 filename", "R2 filename"]
-    for i, replicate in enumerate(config["Replicates"]):
+    for i, replicate in enumerate(input["Replicates"]):
         for field in required_rep_fields:
             value = replicate[field]
             if not value:
                 raise ValueError(
-                    f"Error: replicate {i} {field} was not found. Please check the config file."
+                    f"Error: replicate {i} {field} was not found. Please check the input file."
                 )
             for s_field in required_sample_fields:
                 value = replicate[field][s_field]
                 if not value:
                     raise ValueError(
-                        f"Error: replicate {i} {field} {s_field} was not found. Please check the config file."
+                        f"Error: replicate {i} {field} {s_field} was not found. Please check the input file."
                     )
     # Check that all sample IDs are unique
     sample_ids = [
         replicate[sample]["Sample ID"]
-        for replicate in config["Replicates"]
+        for replicate in input["Replicates"]
         for sample in ["High fluorescence", "Low fluorescence"]
     ]
     if len(sample_ids) != len(set(sample_ids)):
         raise ValueError(
-            "Error: Duplicate sample IDs found. Please check the config file."
+            "Error: Duplicate sample IDs found. Please check the input file."
         )
 
-    return config
+    return input
 
 
 def run_command(command, output_file=None):
@@ -289,7 +289,7 @@ def align_reads(sample_id, input_file, output_dir, splib_idx):
         [
             "bowtie2",
             "-p",
-            "1",
+            "4",
             "--score-min",
             "C,0,-1",
             "-x",
@@ -452,8 +452,8 @@ def main():
         print(f"Error: Unable to change to directory '{abs_directory}'")
         sys.exit(1)
 
-    # Read and validate config
-    config = read_config("config.json")
+    # Read and validate input
+    input = read_input("input.json")
 
     # Set up logging
     logging.basicConfig(
@@ -482,7 +482,7 @@ def main():
 
     alignment_counts = {}
     stats = []
-    for i, replicate in enumerate(config["Replicates"]):
+    for i, replicate in enumerate(input["Replicates"]):
         for sample in ["High fluorescence", "Low fluorescence"]:
             logger.info(f"Processing replicate {i+1} {sample}")
             alignment_counts_file, stats_sample = process_sample(
@@ -490,7 +490,7 @@ def main():
                 replicate[sample]["R1 filename"],
                 replicate[sample]["R2 filename"],
                 output_dirs,
-                config["SP library"],
+                input["SP library"],
             )
             label = f"{'HF' if sample == 'High fluorescence' else 'LF'}{i+1}"
             alignment_counts[label] = alignment_counts_file
