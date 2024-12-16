@@ -5,6 +5,10 @@ import subprocess
 import argparse
 import pandas as pd
 import logging
+from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from sqlalchemy import create_engine, text, Engine
 
 logger = logging.getLogger(__name__)
 
@@ -13,10 +17,11 @@ def check_and_create_directories(output_dirs):
     """Create output directories after checking they don't exist."""
     for dir_name in output_dirs:
         if os.path.exists(dir_name):
-            raise ValueError(
-                f"Error: '{dir_name}' directory already exists. Please clean the directory before running the pipeline."
+            logger.warning(
+                f"Warning: '{dir_name}' directory already exists. Existing files may be overwritten."
             )
-        os.makedirs(dir_name)
+        else:
+            os.makedirs(dir_name)
 
 
 def read_input(input_file):
@@ -278,6 +283,64 @@ def remove_restriction_site(sample_id, input_file, min_length, output_dir):
     return output, pd.DataFrame(stats, index=[sample_id])
 
 
+def get_db_config(config_file: str):
+    with open(config_file) as f:
+        config = json.load(f)
+
+    # Check that all required fields are present
+    required_fields = ["db_name", "db_user", "db_password", "db_host", "db_port"]
+    for field in required_fields:
+        if field not in config:
+            raise ValueError(
+                f"Error: {field} was not found. Please check the db_config.json file."
+            )
+
+    return config
+
+
+def get_db_engine(db_config: dict) -> Engine:
+    return create_engine(
+        f"postgresql://{db_config['db_user']}:{db_config['db_password']}@{db_config['db_host']}:{db_config['db_port']}/{db_config['db_name']}"
+    )
+
+
+def build_library_reference(sp_library: str, db_config: dict):
+    """Build the SP library reference."""
+    logger.info("Building SP library reference")
+
+    # Download the SP library from the database
+    engine = get_db_engine(db_config)
+
+    sp_library_df = pd.read_sql(
+        text(
+            "SELECT sp.name, sp_to_sp_library.dna_sequence_sp_only "
+            "FROM sp_library "
+            "JOIN sp_to_sp_library ON sp_library.id = sp_to_sp_library.sp_library_id "
+            "JOIN sp ON sp_to_sp_library.sp_id = sp.id "
+            f"WHERE sp_library.name = '{sp_library}'"
+        ),
+        engine,
+    )
+
+    records = [
+        SeqRecord(Seq(row["dna_sequence_sp_only"]), id=row["name"], description="")
+        for _, row in sp_library_df.iterrows()
+    ]
+
+    os.makedirs("/sp_library_fastas", exist_ok=True)
+    os.makedirs("/sp_library_refs", exist_ok=True)
+    fasta_file = os.path.join("/sp_library_fastas", f"{sp_library}.fasta")
+    SeqIO.write(records, fasta_file, "fasta")
+    run_command(
+        [
+            "bowtie2-build",
+            fasta_file,
+            os.path.join("/sp_library_refs", f"{sp_library}"),
+        ],
+        f"{sp_library}_bowtie_build.log",
+    )
+
+
 def align_reads(sample_id, input_file, output_dir, splib_idx):
     """Align the reads to the SP library."""
     logger.info("Aligning reads to SP library")
@@ -479,6 +542,11 @@ def main():
 
     # Create output directories
     check_and_create_directories(output_dirs.values())
+
+    db_config = get_db_config("db_config.json")
+
+    # Build the SP library reference
+    build_library_reference(input["SP library"], db_config)
 
     alignment_counts = {}
     stats = []

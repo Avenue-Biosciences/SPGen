@@ -1,0 +1,5 @@
+biopython==1.84
+pandas==2.2.3
+pytest==8.3.3
+psycopg2-binary==2.9.10
+sqlalchemy==2.0.36

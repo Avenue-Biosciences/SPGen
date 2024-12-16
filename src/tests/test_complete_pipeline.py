@@ -2,7 +2,41 @@ import os
 import shutil
 import tempfile
 import pytest
+import pandas as pd
 from run_pipeline import main
+from sqlalchemy import create_engine, text
+
+
+@pytest.fixture
+def test_engine():
+    """Initialize a test database using SQLite in-memory database"""
+    engine = create_engine("sqlite:///:memory:")
+
+    # Insert test data
+    insert_data = pd.read_csv("tests/complete_pipeline_files/db_insert.csv")
+
+    # Insert sp data
+    sp_data = insert_data[
+        ["id", "name", "uniprot_entry", "origin", "amino_acid_sequence"]
+    ]
+    sp_data.to_sql("sp", engine, if_exists="replace", index=False)
+
+    # Create a new library
+    pd.DataFrame({"id": [1], "name": ["integration_test"], "type": ["test"]}).to_sql(
+        "sp_library", engine, if_exists="replace", index=False
+    )
+
+    # Link sps to the new library
+    sp_to_sp_library_data = insert_data[
+        ["dna_sequence_sp_only", "dna_sequence_full"]
+    ].copy()
+    sp_to_sp_library_data["sp_id"] = insert_data["id"]
+    sp_to_sp_library_data["sp_library_id"] = 1
+    sp_to_sp_library_data.to_sql(
+        "sp_to_sp_library", engine, if_exists="replace", index=False
+    )
+
+    return engine
 
 
 @pytest.fixture
@@ -23,11 +57,17 @@ def temp_test_dir():
         os.chdir(original_dir)
 
 
-def test_complete_pipeline(temp_test_dir, monkeypatch):
+def test_complete_pipeline(temp_test_dir, test_engine, monkeypatch):
     """Test the complete pipeline execution."""
     # Modify sys.argv to pass the temp directory as argument
     monkeypatch.setattr("sys.argv", ["run_pipeline.py", temp_test_dir])
+    monkeypatch.setattr("run_pipeline.get_db_engine", lambda config: test_engine)
 
+    expected = (
+        pd.read_csv("tests/complete_pipeline_files/expected_read_counts.csv")
+        .sort_values("SP")
+        .reset_index(drop=True)
+    )
     # Run the pipeline
     main()
 
@@ -50,8 +90,10 @@ def test_complete_pipeline(temp_test_dir, monkeypatch):
     )
 
     # Compare output with expected results
-    output_file = os.path.join(temp_test_dir, "6_read_counts", "read_counts.csv")
-    expected_file = "expected_read_counts.csv"
+    output = (
+        pd.read_csv(os.path.join(temp_test_dir, "6_read_counts", "read_counts.csv"))
+        .sort_values("SP")
+        .reset_index(drop=True)
+    )
 
-    with open(output_file, "r") as f1, open(expected_file, "r") as f2:
-        assert f1.read() == f2.read(), "Output does not match expected results"
+    pd.testing.assert_frame_equal(output, expected)
