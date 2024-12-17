@@ -478,10 +478,10 @@ def read_alignment_counts(filename, label):
         filename,
         sep="\t",
         header=None,
-        names=["SP", "length", f"{label}", "unmapped"],
+        names=["name", "length", f"{label}", "unmapped"],
     )
-    df.loc[df["SP"] == "*", f"{label}"] = df.loc[df["SP"] == "*", "unmapped"]
-    df.loc[df["SP"] == "*", "SP"] = "unmapped"
+    df.loc[df["name"] == "*", f"{label}"] = df.loc[df["name"] == "*", "unmapped"]
+    df.loc[df["name"] == "*", "name"] = "unmapped"
     return df.drop(columns=["length", "unmapped"])
 
 
@@ -496,7 +496,7 @@ def process_read_counts(files):
 
     # Merge with remaining dataframes one by one
     for df in read_counts[1:]:
-        merged_read_counts = pd.merge(merged_read_counts, df, on="SP")
+        merged_read_counts = pd.merge(merged_read_counts, df, on="name")
 
     return merged_read_counts
 
