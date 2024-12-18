@@ -10,8 +10,6 @@ The complete logic for the pipeline is in the `src/run_pipeline.py` file.
 For now, the Python script calls command line tools directly, instead of using their Python API. This is done to maintain easy compatibility with running commands on the command line. All the tools except Flash seem to have a Python API.
 
 
-For now, now `requirements.txt` file is used since there are only 2 dependencies: `pandas` and `pytest`.
-
 ### Docker image
 
 The pipeline is dockerized. To build the image, simply run

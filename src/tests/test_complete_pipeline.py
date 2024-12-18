@@ -65,7 +65,7 @@ def test_complete_pipeline(temp_test_dir, test_engine, monkeypatch):
 
     expected = (
         pd.read_csv("tests/complete_pipeline_files/expected_read_counts.csv")
-        .sort_values("SP")
+        .sort_values("name")
         .reset_index(drop=True)
     )
     # Run the pipeline
@@ -92,7 +92,7 @@ def test_complete_pipeline(temp_test_dir, test_engine, monkeypatch):
     # Compare output with expected results
     output = (
         pd.read_csv(os.path.join(temp_test_dir, "6_read_counts", "read_counts.csv"))
-        .sort_values("SP")
+        .sort_values("name")
         .reset_index(drop=True)
     )
 
