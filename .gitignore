@@ -3,3 +3,4 @@ __pycache__
 test_run
 test_data
 .DS_Store
+venv
