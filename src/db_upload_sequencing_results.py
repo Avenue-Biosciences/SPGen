@@ -1,7 +1,7 @@
 import pandas as pd
 import argparse
 import json
-from run_pipeline import get_db_config, get_db_engine
+from db_utils import get_db_config, get_db_engine
 from sqlalchemy import text, Engine
 from typing import Iterable
 
