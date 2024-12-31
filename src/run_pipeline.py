@@ -465,7 +465,7 @@ def read_alignment_counts(filename, label):
     return df.drop(columns=["length", "unmapped"])
 
 
-def process_read_counts(files):
+def alignments_to_read_counts(files):
     """Process the read counts for the high and low fluorescence samples."""
     logger.info("Processing read counts")
 
@@ -481,14 +481,9 @@ def process_read_counts(files):
     return merged_read_counts
 
 
-def main():
-    # Set up argument parser
-    parser = argparse.ArgumentParser(description="Run the sequencing pipeline.")
-    parser.add_argument("directory", help="Directory containing input files")
-    args = parser.parse_args()
-
+def process_reads(directory: str):
     # Change to specified directory
-    abs_directory = os.path.abspath(args.directory)
+    abs_directory = os.path.abspath(directory)
     try:
         os.chdir(abs_directory)
     except OSError as e:
@@ -549,11 +544,20 @@ def main():
 
     # Process read counts
     logger.info("Processing read counts")
-    merged_read_counts = process_read_counts(alignment_counts)
+    merged_read_counts = alignments_to_read_counts(alignment_counts)
     # Write to file
     merged_read_counts.to_csv(f"{output_dirs['countout']}/read_counts.csv", index=False)
 
     logger.info("Pipeline completed")
+
+
+def main():
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description="Run the sequencing pipeline.")
+    parser.add_argument("directory", help="Directory containing input files")
+    args = parser.parse_args()
+
+    process_reads(args.directory)
 
 
 if __name__ == "__main__":
