@@ -4,6 +4,10 @@ import re
 import itertools
 import os
 import json
+from typing import Iterable
+from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
 from sqlalchemy import text, Engine
 from visualisations import *
 from multiple_replicates import *
@@ -182,7 +186,21 @@ def get_read_counts(target_dir: str) -> pd.DataFrame:
     return df
 
 
-def compute_enrichment(target_dir: str, db_config_file: str, protein: str):
+def write_fasta(ids: Iterable[str], sequences: Iterable[str], output_path: str):
+    records = [
+        SeqRecord(Seq(seq), id=id, description="") for id, seq in zip(ids, sequences)
+    ]
+    SeqIO.write(records, output_path, "fasta")
+
+
+def compute_enrichment(
+    target_dir: str,
+    db_config_file: str,
+    protein: str,
+    library: str,
+    top_n_similarity: int,
+    top_n_signalp: int,
+):
 
     output_dir = os.path.join(target_dir, "7_enrichment")
 
@@ -194,7 +212,7 @@ def compute_enrichment(target_dir: str, db_config_file: str, protein: str):
     engine = get_db_engine(db_config)
 
     # Read read counts
-    df = pd.read_csv(os.path.join(target_dir, "6_read_counts", "read_counts.csv"))
+    df = get_read_counts(target_dir)
     # Get signal peptide origins
     sp_origins = get_sp_origins(df["name"].tolist(), engine)
     # Merge
@@ -277,6 +295,35 @@ def compute_enrichment(target_dir: str, db_config_file: str, protein: str):
         os.path.join(output_dir, "correlation_heatmap.pdf"),
     )
 
+    # Get library sequences
+    library_sequences = get_library_sequences(df["name"].tolist(), library, engine)
+    df = pd.merge(df, library_sequences, on="name", how="left")
+
+    # Compute similarities
+    top_similarity_df = df.head(top_n_similarity)
+    top_sps_similarities = compute_similarities(top_similarity_df)
+    top_sps_similarities["SP1"] = top_similarity_df.loc[
+        top_sps_similarities["i"], "name"
+    ].reset_index(drop=True)
+    top_sps_similarities["SP2"] = top_similarity_df.loc[
+        top_sps_similarities["j"], "name"
+    ].reset_index(drop=True)
+    similarities_wide = plot_similarity_heatmap(
+        top_sps_similarities,
+        os.path.join(output_dir, f"SP similarities heatmap.pdf"),
+    )
+    similarities_wide.to_excel(
+        os.path.join(output_dir, f"SP similarities wide.xlsx"), index=True
+    )
+
+    # Write to FASTA and draw phylogenetic tree
+    fasta_path = os.path.join(output_dir, f"SPs.fasta")
+    write_fasta(
+        top_similarity_df["name"], top_similarity_df["amino_acid_sequence"], fasta_path
+    )
+
+    draw_phylogenetic_tree(fasta_path, output_dir)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -287,10 +334,15 @@ def main():
     args = parser.parse_args()
 
     input = read_input(args.input)
-    target_dir = input["target_directory"]
-    protein = input["protein"]
 
-    compute_enrichment(target_dir, args.db_config, protein)
+    compute_enrichment(
+        input["target_directory"],
+        args.db_config,
+        input["protein"],
+        input["library"],
+        input["top_n_similarity"],
+        input["top_n_signalp"],
+    )
 
 
 if __name__ == "__main__":
