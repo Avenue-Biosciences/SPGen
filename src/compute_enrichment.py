@@ -7,7 +7,7 @@ import json
 from sqlalchemy import text, Engine
 from visualisations import *
 from multiple_replicates import *
-from similarities import *
+from top_sp_stats import *
 from db_utils import *
 
 
@@ -239,6 +239,16 @@ def compute_enrichment(
     common_sps_ranks = get_common_sps(df, rank_columns)
 
     plot_rank_pairplot(df, rank_columns, os.path.join(output_dir, "rank_pairplot.pdf"))
+
+    # Compute SignalP predictions
+    signalp_results = run_signalp(
+        df.head(top_n_signalp),
+        library,
+        protein,
+        engine,
+        os.path.join(output_dir, "signalp"),
+    )
+    df = pd.merge(df, signalp_results, on="name", how="left")
 
     save_df = df.copy()
     float_columns = save_df.select_dtypes(include=["float64", "float32"]).columns
