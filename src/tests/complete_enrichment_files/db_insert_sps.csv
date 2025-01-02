@@ -1,0 +1,5 @@
+id,name,origin,amino_acid_sequence,dna_sequence_sp_only,dna_sequence_full
+1,A,Human,ML,ATGCTT,CCCATGCTTGGG
+2,B,Human,MR,ATGCGT,CCCATGCGTGGG
+3,C,Human,MA,ATGGCC,CCCATGGCCGGG
+4,D,Cytosolic proteins,MLL,ATGCTCCTT,CCCATGCTCCTTGGG
