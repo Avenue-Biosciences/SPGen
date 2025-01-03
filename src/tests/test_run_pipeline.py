@@ -36,23 +36,19 @@ def test_engine():
         "sp_to_sp_library", engine, if_exists="replace", index=False
     )
 
+    # Insert mature sequence
+    mature_seq = "LRALLLLLLL"
+    mature_seq_df = pd.DataFrame(
+        {"id": 1, "name": "imaginunomab", "amino_acid_sequence": [mature_seq]}
+    )
+    mature_seq_df.to_sql("protein", engine, if_exists="replace", index=False)
+
     # Create test tables
     with engine.connect() as conn:
         conn.execute(
             text(
                 """
             CREATE TABLE screening (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL UNIQUE
-            )
-        """
-            )
-        )
-
-        conn.execute(
-            text(
-                """
-            CREATE TABLE protein (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL UNIQUE
             )

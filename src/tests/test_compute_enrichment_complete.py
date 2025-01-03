@@ -41,6 +41,13 @@ def test_engine():
         "sp_to_sp_library", engine, if_exists="replace", index=False
     )
 
+    # Insert mature sequence
+    mature_seq = "LRALLLLLLL"
+    mature_seq_df = pd.DataFrame(
+        {"name": "imaginunomab", "amino_acid_sequence": [mature_seq]}
+    )
+    mature_seq_df.to_sql("protein", engine, if_exists="replace", index=False)
+
     return engine
 
 

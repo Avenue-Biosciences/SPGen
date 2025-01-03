@@ -203,9 +203,22 @@ def compute_similarities_with_tree(
     draw_phylogenetic_tree(fasta_path, output_dir)
 
 
-def get_mature_sequence(protein: str):
+def get_mature_sequence(protein: str, engine: Engine):
     logger.info(f"Getting mature sequence of {protein} from database")
-    return "LLLLL"
+
+    # Get mature sequence from database
+    seq_df = pd.read_sql(
+        f"""
+        SELECT amino_acid_sequence FROM protein WHERE name = '{protein}'
+        """,
+        engine,
+    )
+
+    if seq_df.empty:
+        logger.error(f"Mature sequence of {protein} not found in database")
+        return None
+
+    return seq_df["amino_acid_sequence"].values[0]
 
 
 def run_signalp(
@@ -218,7 +231,9 @@ def run_signalp(
     df = pd.merge(df, library_sequences, on="name", how="left")
 
     # Add mature sequence to the amino acid sequence
-    mature_seq = get_mature_sequence(protein)
+    mature_seq = get_mature_sequence(protein, engine)
+    if mature_seq is None:
+        return None
     df["amino_acid_sequence_with_mature"] = df["amino_acid_sequence"] + mature_seq
 
     # Write to FASTA

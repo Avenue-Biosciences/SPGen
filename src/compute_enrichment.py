@@ -256,7 +256,8 @@ def compute_enrichment(
         engine,
         os.path.join(output_dir, "signalp"),
     )
-    df = pd.merge(df, signalp_results, on="name", how="left")
+    if signalp_results is not None:
+        df = pd.merge(df, signalp_results, on="name", how="left")
 
     save_df = df.copy()
     float_columns = save_df.select_dtypes(include=["float64", "float32"]).columns
