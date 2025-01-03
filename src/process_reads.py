@@ -5,7 +5,7 @@ import subprocess
 import argparse
 import pandas as pd
 import logging
-from sqlalchemy import text
+from sqlalchemy import text, Engine
 from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
@@ -258,13 +258,11 @@ def remove_restriction_site(sample_id, input_file, min_length, output_dir):
     return output, pd.DataFrame(stats, index=[sample_id])
 
 
-def build_library_reference(sp_library: str, db_config: dict):
+def build_library_reference(sp_library: str, engine: Engine):
     """Build the SP library reference."""
     logger.info("Building SP library reference")
 
     # Download the SP library from the database
-    engine = get_db_engine(db_config)
-
     sp_library_df = pd.read_sql(
         text(
             "SELECT sp.name, sp_to_sp_library.dna_sequence_sp_only "
@@ -455,7 +453,7 @@ def alignments_to_read_counts(files):
     return merged_read_counts
 
 
-def process_reads(directory: str):
+def process_reads(directory: str, engine: Engine):
     # Change to specified directory
     abs_directory = os.path.abspath(directory)
     try:
@@ -467,13 +465,6 @@ def process_reads(directory: str):
     # Read and validate input
     input = read_input("input.json")
 
-    # Set up logging
-    logging.basicConfig(
-        filename="run_pipeline.log",
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
     logger.info("Starting pipeline")
 
     # Define output directories
@@ -492,10 +483,8 @@ def process_reads(directory: str):
     # Create output directories
     check_and_create_directories(output_dirs.values())
 
-    db_config = get_db_config("db_config.json")
-
     # Build the SP library reference
-    build_library_reference(input["SP library"], db_config)
+    build_library_reference(input["SP library"], engine)
 
     alignment_counts = {}
     stats = []
@@ -520,18 +509,35 @@ def process_reads(directory: str):
     logger.info("Processing read counts")
     merged_read_counts = alignments_to_read_counts(alignment_counts)
     # Write to file
-    merged_read_counts.to_csv(f"{output_dirs['countout']}/read_counts.csv", index=False)
+    read_counts_file = f"{output_dirs['countout']}/read_counts.csv"
+    merged_read_counts.to_csv(read_counts_file, index=False)
 
     logger.info("Pipeline completed")
+
+    return read_counts_file
 
 
 def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description="Run the sequencing pipeline.")
     parser.add_argument("directory", help="Directory containing input files")
+    parser.add_argument(
+        "db_config", help="Path to the database configuration JSON file"
+    )
     args = parser.parse_args()
 
-    process_reads(args.directory)
+    # Set up logging
+    logging.basicConfig(
+        filename=os.path.join(args.directory, "run_pipeline.log"),
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    db_config = get_db_config(args.db_config)
+    engine = get_db_engine(db_config)
+
+    process_reads(args.directory, engine)
 
 
 if __name__ == "__main__":

@@ -31,7 +31,12 @@ def read_input(input_path: str) -> pd.DataFrame:
         input = json.load(f)
 
     # Check required fields
-    required_fields = ["protein", "target_directory", "library"]
+    required_fields = [
+        "SP library",
+        "Protein name",
+        "N Top SPs similarity",
+        "N Top SPs SignalP",
+    ]
     missing_fields = [field for field in required_fields if field not in input]
 
     if missing_fields:
@@ -189,21 +194,18 @@ def get_read_counts(target_dir: str) -> pd.DataFrame:
 
 def compute_enrichment(
     target_dir: str,
-    db_config_file: str,
-    protein: str,
-    library: str,
-    top_n_similarity: int,
-    top_n_signalp: int,
+    engine: Engine,
 ):
+    input = read_input(os.path.join(target_dir, "input.json"))
+    library = input["SP library"]
+    protein = input["Protein name"]
+    top_n_similarity = input["N Top SPs similarity"]
+    top_n_signalp = input["N Top SPs SignalP"]
 
     output_dir = os.path.join(target_dir, "7_enrichment")
 
     # Create output directory if it doesn't exist
     os.makedirs(output_dir, exist_ok=True)
-
-    # Connect to db
-    db_config = get_db_config(db_config_file)
-    engine = get_db_engine(db_config)
 
     # Read read counts
     df = get_read_counts(target_dir)
@@ -307,22 +309,24 @@ def compute_enrichment(
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("input", help="Path to the input JSON file")
+    parser.add_argument("directory", help="Directory containing input files")
     parser.add_argument(
         "db_config", help="Path to the database configuration JSON file"
     )
     args = parser.parse_args()
 
-    input = read_input(args.input)
-
-    compute_enrichment(
-        input["target_directory"],
-        args.db_config,
-        input["protein"],
-        input["library"],
-        input["top_n_similarity"],
-        input["top_n_signalp"],
+    # Set up logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
+
+    # Connect to db
+    db_config = get_db_config(args.db_config)
+    engine = get_db_engine(db_config)
+
+    compute_enrichment(target_dir=args.directory, engine=engine)
 
 
 if __name__ == "__main__":

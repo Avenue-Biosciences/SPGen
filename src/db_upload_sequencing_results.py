@@ -1,6 +1,7 @@
 import pandas as pd
 import argparse
 import json
+import os
 from sqlalchemy import text, Engine
 from typing import Iterable
 import logging
@@ -33,23 +34,23 @@ def get_screening_id(screening_name: str, engine: Engine) -> int:
     return id
 
 
-def get_protein_id(protein_name: str, engine: Engine) -> int:
+def get_protein_id(protein: str, engine: Engine) -> int:
     """
     Get the id of a protein from the database
     If the protein does not exist, create it
     """
     with engine.connect() as conn:
-        logger.info(f"Getting protein id for {protein_name}")
-        fetch_query = text(f"SELECT id FROM protein WHERE name = '{protein_name}'")
+        logger.info(f"Getting protein id for {protein}")
+        fetch_query = text(f"SELECT id FROM protein WHERE name = '{protein}'")
         id = conn.execute(fetch_query).scalar()
         if id is None:
-            logger.info(f"Protein {protein_name} not found in database, creating...")
-            insert_query = text(f"INSERT INTO protein (name) VALUES ('{protein_name}')")
+            logger.info(f"Protein {protein} not found in database, creating...")
+            insert_query = text(f"INSERT INTO protein (name) VALUES ('{protein}')")
             conn.execute(insert_query)
             conn.commit()
             id = conn.execute(fetch_query).scalar()
         else:
-            logger.info(f"Protein {protein_name} found in database")
+            logger.info(f"Protein {protein} found in database")
     return id
 
 
@@ -180,7 +181,7 @@ def read_input(input_path: str) -> dict:
         input = json.load(f)
 
     # Check required fields
-    required_fields = ["input_file", "screening_name", "protein_name"]
+    required_fields = ["Screening name", "Protein name"]
     missing_fields = [field for field in required_fields if field not in input]
 
     if missing_fields:
@@ -191,26 +192,20 @@ def read_input(input_path: str) -> dict:
     return input
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("input", help="Path to the input JSON file")
-    parser.add_argument(
-        "db_config", help="Path to the database configuration JSON file"
-    )
-    parser.add_argument(
-        "--empty", action="store_true", help="Empty the database before inserting"
-    )
-    args = parser.parse_args()
+def upload_sequencing_results(
+    target_dir: str,
+    engine: Engine,
+    empty: bool,
+):
+    input = read_input(os.path.join(target_dir, "input.json"))
+    screening_name = input["Screening name"]
+    protein = input["Protein name"]
+    read_count_file = os.path.join(target_dir, "6_read_counts", "read_counts.csv")
 
-    db_config = get_db_config(args.db_config)
-    engine = get_db_engine(db_config)
+    screening_id = get_screening_id(screening_name, engine)
+    protein_id = get_protein_id(protein, engine)
 
-    input = read_input(args.input)
-
-    screening_id = get_screening_id(input["screening_name"], engine)
-    protein_id = get_protein_id(input["protein_name"], engine)
-
-    read_counts_df = pd.read_csv(input["input_file"])
+    read_counts_df = pd.read_csv(read_count_file)
     if "unmapped" in read_counts_df["name"].values:
         # Remove unmapped SPs
         logger.info("Removing unmapped counts")
@@ -221,7 +216,7 @@ def main():
     read_counts_df = pd.merge(read_counts_df, sp_ids, on="name")
 
     # Development:
-    if args.empty:
+    if empty:
         logger.info("Emptying the database before inserting")
         with engine.connect() as conn:
             conn.execute(text("DELETE FROM screening_result_replicate"))
@@ -229,6 +224,34 @@ def main():
             conn.commit()
 
     insert_results(read_counts_df, screening_id, protein_id, engine)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("directory", help="Directory containing input files")
+    parser.add_argument(
+        "db_config", help="Path to the database configuration JSON file"
+    )
+    parser.add_argument(
+        "--empty", action="store_true", help="Empty the database before inserting"
+    )
+    args = parser.parse_args()
+
+    # Set up logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    db_config = get_db_config(args.db_config)
+    engine = get_db_engine(db_config)
+
+    upload_sequencing_results(
+        target_dir=args.directory,
+        engine=engine,
+        empty=args.empty,
+    )
 
 
 if __name__ == "__main__":
