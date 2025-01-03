@@ -96,7 +96,6 @@ def draw_phylogenetic_tree(
     fasta_file,
     output_dir,
     matrix="blosum62",
-    muscle_path="/Users/anton/Projects/screening_platform/src/muscle-osx-arm64.v5.3",
 ):
     """
     Creates a phylogenetic tree from a FASTA file using the following steps:
@@ -115,13 +114,17 @@ def draw_phylogenetic_tree(
     output = os.path.join(output_dir, "alignment_" + os.path.basename(fasta_file))
     # Run MUSCLE alignment using subprocess
     muscle_cmd = [
-        muscle_path,
+        "muscle",
         "-align",
         fasta_file,
         "-output",
         output,
     ]
-    subprocess.run(muscle_cmd, check=True, capture_output=True)
+    try:
+        run_command(muscle_cmd)
+    except Exception as e:
+        logger.error(f"Error running MUSCLE, could not draw phylogenetic tree")
+        return
 
     # Read the alignment
     alignment = AlignIO.read(output, "fasta")

@@ -28,6 +28,10 @@ RUN wget https://github.com/samtools/samtools/releases/download/1.21/samtools-1.
 RUN tar -xvjf samtools-1.21.tar.bz2
 RUN cd samtools-1.21 && ./configure && make && make install
 
+# MUSCLE
+RUN wget https://github.com/rcedgar/muscle/releases/download/v5.3/muscle-aarch64.v5.3
+RUN mv muscle-aarch64.v5.3 /tools/muscle && chmod +x /tools/muscle
+
 # Add to path
 RUN echo "export PATH=/tools:/tools/FastQC:\$PATH"  >> ~/.bashrc
 ENV PATH=/tools:/tools/FastQC:$PATH
@@ -35,10 +39,19 @@ ENV PATH=/tools:/tools/FastQC:$PATH
 # Cleanup
 RUN rm -r FLASH* samtools*
 
+
 # Python packages
 COPY requirements.txt /
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
+
+# SignalP
+COPY SignalP-6.0/signalp6_slow_sequential/signalp-6-package /signalp-6-package
+RUN pip install /signalp-6-package/
+RUN SIGNALP_DIR=$(python3 -c "import signalp; import os; print(os.path.dirname(signalp.__file__))" ) && \
+    cp -r /signalp-6-package/models/* $SIGNALP_DIR/model_weights/
+RUN rm -r /signalp-6-package
+
 
 # Copy pipeline code and tests
 COPY src/ /
