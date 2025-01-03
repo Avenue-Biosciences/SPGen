@@ -1,5 +1,6 @@
 {
-    "protein": "imaginunomab",
-    "target_directory": "",
-    "library": "R2B"
+    "Protein name": "imaginunomab",
+    "SP library": "integration_test",
+    "N Top SPs similarity": 4,
+    "N Top SPs SignalP": 4
 }

@@ -82,7 +82,7 @@ def test_complete_run(temp_test_dir, test_engine, monkeypatch):
         "sys.argv",
         [
             "compute_enrichment.py",
-            os.path.join(temp_test_dir, "input.json"),
+            temp_test_dir,
             os.path.join(temp_test_dir, "db_config.json"),
         ],
     )
@@ -109,6 +109,13 @@ def test_complete_run(temp_test_dir, test_engine, monkeypatch):
             "Cohen d rank",
             "HF mean percent",
             "HF mean percent rank",
+            "SignalP_prediction",
+            "SignalP_P_Other",
+            "SignalP_P_SP",
+            "SP_length",
+            "CS_start",
+            "CS_end",
+            "CS_prob",
         ]
     )
     expected_results = pd.read_excel(

@@ -260,6 +260,7 @@ def run_signalp(
         "SignalP_P_SP",
         "CS_position",
     ]
+    results["CS_position"] = results["CS_position"].astype(str)
     results[["CS_start", "CS_end", "CS_prob"]] = results["CS_position"].str.extract(
         r"CS pos\: (\d+)-(\d+)\. Pr: (\d+\.\d+)"
     )

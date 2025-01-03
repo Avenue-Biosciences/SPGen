@@ -60,8 +60,15 @@ def temp_test_dir():
 def test_complete_pipeline(temp_test_dir, test_engine, monkeypatch):
     """Test the complete pipeline execution."""
     # Modify sys.argv to pass the temp directory as argument
-    monkeypatch.setattr("sys.argv", ["run_pipeline.py", temp_test_dir])
-    monkeypatch.setattr("run_pipeline.get_db_engine", lambda config: test_engine)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "process_reads.py",
+            temp_test_dir,
+            os.path.join(temp_test_dir, "db_config.json"),
+        ],
+    )
+    monkeypatch.setattr("process_reads.get_db_engine", lambda config: test_engine)
 
     expected = (
         pd.read_csv("tests/complete_pipeline_files/expected_read_counts.csv")

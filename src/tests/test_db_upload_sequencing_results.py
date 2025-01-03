@@ -6,7 +6,6 @@ from db_upload_sequencing_results import (
     get_protein_id,
     get_sp_ids,
     insert_results,
-    get_existing_results,
 )
 
 
@@ -118,47 +117,6 @@ def test_get_sp_ids(test_engine):
     sp_ids = get_sp_ids(sp_names, test_engine)
     expected_ids = pd.DataFrame({"name": sp_names, "sp_id": [1, 3]})
     pd.testing.assert_frame_equal(sp_ids, expected_ids)
-
-
-def verify_results(
-    expected_read_counts, n_replicates, screening_id, protein_id, engine
-):
-
-    with engine.connect() as conn:
-        n_rows_screening_result = conn.execute(
-            text("SELECT COUNT(*) FROM screening_result")
-        ).scalar()
-        assert n_rows_screening_result == expected_read_counts.shape[0]
-
-        n_rows_screening_result_replicate = conn.execute(
-            text("SELECT COUNT(*) FROM screening_result_replicate")
-        ).scalar()
-        assert (
-            n_rows_screening_result_replicate
-            == expected_read_counts.shape[0] * n_replicates
-        )
-
-    query = text(
-        f"""
-        SELECT 
-            sp.name,
-            MAX(CASE WHEN replicate_number = 1 THEN hf_count END) as HF1,
-            MAX(CASE WHEN replicate_number = 1 THEN lf_count END) as LF1,
-            MAX(CASE WHEN replicate_number = 2 THEN hf_count END) as HF2,
-            MAX(CASE WHEN replicate_number = 2 THEN lf_count END) as LF2
-        FROM screening_result_replicate
-        JOIN screening_result ON screening_result_replicate.screening_result_id = screening_result.id
-        JOIN sp ON screening_result.sp_id = sp.id
-        WHERE screening_result.screening_id = {screening_id}
-        AND screening_result.protein_id = {protein_id}
-        GROUP BY sp.name
-        """
-    )
-
-    inserted = pd.read_sql(query, engine).sort_values(by="name").reset_index(drop=True)
-    pd.testing.assert_frame_equal(
-        inserted, expected_read_counts.sort_values(by="name").reset_index(drop=True)
-    )
 
 
 def verify_results(

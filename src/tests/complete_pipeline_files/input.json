@@ -25,5 +25,9 @@
             }
         }
     ],
-    "SP library": "integration_test"
+    "SP library": "integration_test",
+    "Protein name": "imaginunomab",
+    "Screening name": "integration_test",
+    "N Top SPs similarity": 3,
+    "N Top SPs SignalP": 3
 }
