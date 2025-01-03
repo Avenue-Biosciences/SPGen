@@ -509,12 +509,9 @@ def process_reads(directory: str, engine: Engine):
     logger.info("Processing read counts")
     merged_read_counts = alignments_to_read_counts(alignment_counts)
     # Write to file
-    read_counts_file = f"{output_dirs['countout']}/read_counts.csv"
-    merged_read_counts.to_csv(read_counts_file, index=False)
+    merged_read_counts.to_csv(f"{output_dirs['countout']}/read_counts.csv", index=False)
 
     logger.info("Pipeline completed")
-
-    return read_counts_file
 
 
 def main():

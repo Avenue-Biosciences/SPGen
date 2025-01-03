@@ -195,7 +195,7 @@ def read_input(input_path: str) -> dict:
 def upload_sequencing_results(
     target_dir: str,
     engine: Engine,
-    empty: bool,
+    empty: bool = False,
 ):
     input = read_input(os.path.join(target_dir, "input.json"))
     screening_name = input["Screening name"]

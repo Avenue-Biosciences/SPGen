@@ -3,8 +3,8 @@ import shutil
 import tempfile
 import pytest
 import pandas as pd
-from run_pipeline import main
-from sqlalchemy import create_engine, text
+from process_reads import main
+from sqlalchemy import create_engine
 
 
 @pytest.fixture
