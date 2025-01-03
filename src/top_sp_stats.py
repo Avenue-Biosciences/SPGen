@@ -33,6 +33,7 @@ def compute_similarity(seq1: str, seq2: str) -> int:
 
 
 def compute_similarities(sps: pd.DataFrame) -> pd.DataFrame:
+    logger.info("Computing pairwise similarities between SP amino acid sequences")
     # Create all possible combinations of sequences
     comb_df = pd.DataFrame(itertools.combinations(sps.index, 2), columns=["i", "j"])
 
@@ -110,7 +111,7 @@ def draw_phylogenetic_tree(
         ax: matplotlib axis object
         matrix (str): Substitution matrix to use ('blosum62', 'pam250', etc.)
     """
-
+    logger.info("Performing multiple sequence alignment")
     output = os.path.join(output_dir, "alignment_" + os.path.basename(fasta_file))
     # Run MUSCLE alignment using subprocess
     muscle_cmd = [
@@ -127,6 +128,7 @@ def draw_phylogenetic_tree(
         return
 
     # Read the alignment
+    logger.info("Reading alignment and drawing phylogenetic tree")
     alignment = AlignIO.read(output, "fasta")
 
     # Calculate distance matrix using specified substitution matrix
@@ -202,6 +204,7 @@ def compute_similarities_with_tree(
 
 
 def get_mature_sequence(protein: str):
+    logger.info(f"Getting mature sequence of {protein} from database")
     return "LLLLL"
 
 
@@ -218,9 +221,10 @@ def run_signalp(
     mature_seq = get_mature_sequence(protein)
     df["amino_acid_sequence_with_mature"] = df["amino_acid_sequence"] + mature_seq
 
-    # Write to FASTA and draw phylogenetic tree
+    # Write to FASTA
     fasta_path = os.path.join(output_dir, f"SPs_with_mature.fasta")
 
+    logger.info("Running SignalP")
     try:
         write_fasta(df["name"], df["amino_acid_sequence_with_mature"], fasta_path)
 
@@ -245,6 +249,7 @@ def run_signalp(
         if os.path.exists(fasta_path):
             os.remove(fasta_path)
 
+    logger.info("Processing SignalP results")
     results = pd.read_csv(
         os.path.join(output_dir, "prediction_results.txt"), sep="\t", skiprows=1
     )

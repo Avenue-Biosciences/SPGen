@@ -2,9 +2,13 @@ import json
 import pandas as pd
 from typing import Iterable
 from sqlalchemy import create_engine, text, Engine
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_db_config(config_file: str):
+    logger.info(f"Loading database configuration from {config_file}")
     with open(config_file) as f:
         config = json.load(f)
 
@@ -20,14 +24,18 @@ def get_db_config(config_file: str):
 
 
 def get_db_engine(db_config: dict) -> Engine:
-    return create_engine(
+    logger.info("Creating database engine for")
+    engine = create_engine(
         f"postgresql://{db_config['db_user']}:{db_config['db_password']}@{db_config['db_host']}:{db_config['db_port']}/{db_config['db_name']}"
     )
+    logger.info("Database engine created")
+    return engine
 
 
 def get_library_sequences(
     sp_names: Iterable[str], library: str, engine: Engine
 ) -> pd.DataFrame:
+    logger.info("Getting SP sequences based on library from database")
     names_joined = ",".join(f"'{name}'" for name in sp_names)
     sp_library_df = pd.read_sql(
         text(
@@ -42,7 +50,6 @@ def get_library_sequences(
     )
 
     if sp_library_df.shape[0] != len(sp_names):
-        print(set(sp_names) - set(sp_library_df["name"]))
         raise ValueError(
             f"Expected {len(sp_names)} sequences, but got {sp_library_df.shape[0]} sequences from database"
         )

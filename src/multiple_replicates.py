@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 from scipy.stats import ttest_ind
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def signif(x, digits=2):
@@ -81,6 +84,7 @@ def add_cohen_d(
     """
     Calculate Cohen's d for two groups.
     """
+    logger.info("Calculating Cohen's d")
 
     def cohen_d(group1, group2):
         mean1, mean2 = np.mean(group1), np.mean(group2)
@@ -107,7 +111,7 @@ def add_hf_percentages(df: pd.DataFrame) -> pd.DataFrame:
     """
     Compute the percentage of reads that map to each HF
     """
-
+    logger.info("Calculating mean percentagesof HF reads")
     df["HF mean percent"] = df["HF mean"] / (df["HF mean"] + df["LF mean"])
 
     df["HF mean percent rank"] = df["HF mean percent"].rank(
@@ -123,6 +127,7 @@ def add_t_test_p_value(
     """
     Compute the p-value for each SP using a t-test
     """
+    logger.info("Calculating p-values of t-test between HFs and LFs")
     try:
         df["p_value"] = df.apply(
             lambda row: ttest_ind(

@@ -4,6 +4,9 @@ import seaborn as sns
 import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy.cluster.hierarchy import dendrogram, linkage
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def plot_rank_vs_ef(
@@ -54,6 +57,7 @@ def plot_rank_vs_ef(
     )
     plt.title(f"Enrichment factors for SPs with {protein_name}")
     plt.savefig(output_path, bbox_inches="tight")
+    logger.info(f"Saved rank vs ef plot to {output_path}")
 
 
 def volcano_plot(
@@ -136,6 +140,7 @@ def volcano_plot(
     plt.legend(title="", loc="upper right")
     plt.title(f"Volcano plot for SPs with {protein_name}")
     plt.savefig(output_path, bbox_inches="tight")
+    logger.info(f"Saved volcano plot to {output_path}")
 
 
 def plot_correlation_heatmap(
@@ -150,6 +155,7 @@ def plot_correlation_heatmap(
     sns.heatmap(corr_matrix, annot=True, cmap="coolwarm_r", center=0, vmin=-1, vmax=1)
     plt.title("Correlation heatmap between HFs and LFs")
     plt.savefig(output_path, bbox_inches="tight")
+    logger.info(f"Saved correlation heatmap to {output_path}")
 
 
 def plot_rank_pairplot(df: pd.DataFrame, rank_cols: list[str], output_path: str):
@@ -197,3 +203,4 @@ def plot_rank_pairplot(df: pd.DataFrame, rank_cols: list[str], output_path: str)
 
         pdf.savefig(bbox_inches="tight")
         plt.close()
+    logger.info(f"Saved rank pairplot to {output_path}")

@@ -5,10 +5,13 @@ import itertools
 import os
 import json
 from sqlalchemy import text, Engine
+import logging
 from visualisations import *
 from multiple_replicates import *
 from top_sp_stats import *
 from db_utils import *
+
+logger = logging.getLogger(__name__)
 
 
 def read_input(input_path: str) -> pd.DataFrame:
@@ -52,6 +55,7 @@ def normalise_read_counts(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with normalised read counts
     """
+    logger.info("Normalising read counts")
     # Create a copy to avoid modifying the original
     df = df.copy()
 
@@ -74,7 +78,7 @@ def get_common_sps(df: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
     """
     For each pair of EF columns, get the number of common SPs in top 20 and top 100
     """
-
+    logger.info("Recording common SPs in top ranks between replicates")
     # Generate pairs of columns using itertools
     column_pairs = list(itertools.combinations(columns, 2))
 
@@ -110,7 +114,7 @@ def add_enrichment_factors(
     """
     Compute the enrichment factors and their ranks using normalized read counts
     """
-
+    logger.info("Computing enrichment factors")
     if not hf_columns or not lf_columns:
         raise ValueError(
             "No normalized HF or LF columns found. Run normalise_read_counts first."
@@ -134,6 +138,7 @@ def add_enrichment_factors(
 
 
 def get_sp_origins(sp_names: list[str], engine: Engine) -> pd.DataFrame:
+    logger.info("Getting SP origins from database")
     names_joined = ",".join(f"'{name}'" for name in sp_names)
     query = text(f"SELECT name, origin FROM sp WHERE name IN ({names_joined})")
     df = pd.read_sql(query, engine)
@@ -141,6 +146,7 @@ def get_sp_origins(sp_names: list[str], engine: Engine) -> pd.DataFrame:
 
 
 def get_read_counts(target_dir: str) -> pd.DataFrame:
+    logger.info("Getting read counts")
     filepath = os.path.join(target_dir, "6_read_counts", "read_counts.csv")
     if not os.path.exists(filepath):
         raise ValueError(
@@ -175,7 +181,7 @@ def get_read_counts(target_dir: str) -> pd.DataFrame:
 
     if "unmapped" in df["name"].values:
         # Remove unmapped SPs
-        print("Removing unmapped counts")
+        logger.info("Removing unmapped counts")
         df = df.loc[df["name"] != "unmapped", :]
 
     return df

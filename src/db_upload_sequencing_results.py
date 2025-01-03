@@ -1,9 +1,12 @@
 import pandas as pd
 import argparse
 import json
-from db_utils import get_db_config, get_db_engine
 from sqlalchemy import text, Engine
 from typing import Iterable
+import logging
+from db_utils import get_db_config, get_db_engine
+
+logger = logging.getLogger(__name__)
 
 
 def get_screening_id(screening_name: str, engine: Engine) -> int:
@@ -12,11 +15,13 @@ def get_screening_id(screening_name: str, engine: Engine) -> int:
     If the screening does not exist, create it
     """
     with engine.connect() as conn:
-        print(f"Getting screening id for {screening_name}")
+        logger.info(f"Getting screening id for {screening_name}")
         fetch_query = text(f"SELECT id FROM screening WHERE name = '{screening_name}'")
         id = conn.execute(fetch_query).scalar()
         if id is None:
-            print(f"Screening {screening_name} not found in database, creating...")
+            logger.info(
+                f"Screening {screening_name} not found in database, creating..."
+            )
             insert_query = text(
                 f"INSERT INTO screening (name) VALUES ('{screening_name}')"
             )
@@ -24,7 +29,7 @@ def get_screening_id(screening_name: str, engine: Engine) -> int:
             conn.commit()
             id = conn.execute(fetch_query).scalar()
         else:
-            print(f"Screening {screening_name} found in database")
+            logger.info(f"Screening {screening_name} found in database")
     return id
 
 
@@ -34,17 +39,17 @@ def get_protein_id(protein_name: str, engine: Engine) -> int:
     If the protein does not exist, create it
     """
     with engine.connect() as conn:
-        print(f"Getting protein id for {protein_name}")
+        logger.info(f"Getting protein id for {protein_name}")
         fetch_query = text(f"SELECT id FROM protein WHERE name = '{protein_name}'")
         id = conn.execute(fetch_query).scalar()
         if id is None:
-            print(f"Protein {protein_name} not found in database, creating...")
+            logger.info(f"Protein {protein_name} not found in database, creating...")
             insert_query = text(f"INSERT INTO protein (name) VALUES ('{protein_name}')")
             conn.execute(insert_query)
             conn.commit()
             id = conn.execute(fetch_query).scalar()
         else:
-            print(f"Protein {protein_name} found in database")
+            logger.info(f"Protein {protein_name} found in database")
     return id
 
 
@@ -52,12 +57,12 @@ def get_sp_ids(sp_names: Iterable[str], engine: Engine) -> pd.DataFrame:
     """
     Get the ids of a list of sps from the database
     """
-    print(f"Getting SP ids for {len(sp_names)} SPs")
+    logger.info(f"Getting SP ids for {len(sp_names)} SPs")
     fetch_query = text(
         f"SELECT name, id as sp_id FROM sp WHERE name IN ({','.join(f"'{name}'" for name in sp_names)})"
     )
     ids = pd.read_sql(fetch_query, engine)
-    print(f"Found {ids.shape[0]} SPs in the database")
+    logger.info(f"Found {ids.shape[0]} SPs in the database")
     if ids.shape[0] != len(sp_names):
         raise ValueError(
             f"{len(sp_names) - ids.shape[0]} SPs do not exist in the database"
@@ -105,13 +110,13 @@ def insert_results(
     read_counts_melted.columns = ["sp_id", "replicate_number", "hf_count", "lf_count"]
 
     # Check for existing results
-    print("Checking for existing results")
+    logger.info("Checking for existing results")
     existing_results = get_existing_results(screening_id, protein_id, engine)
 
     if existing_results.empty:
-        print("No existing results found")
+        logger.info("No existing results found")
         # Create screening results
-        print("Creating screening results")
+        logger.info("Creating screening results")
         screening_result = pd.DataFrame(
             {
                 "sp_id": read_counts_melted["sp_id"].unique(),
@@ -124,7 +129,9 @@ def insert_results(
         )
 
         read_counts_insert = read_counts_melted
-        print(f"Inserting {read_counts_insert.shape[0]} results into the database")
+        logger.info(
+            f"Inserting {read_counts_insert.shape[0]} results into the database"
+        )
     else:
         # Remove existing results
         read_counts_insert = pd.merge(
@@ -137,7 +144,7 @@ def insert_results(
         matches_existing = read_counts_insert.loc[
             read_counts_insert["_merge"] == "both", :
         ]
-        print(
+        logger.info(
             f"Found {matches_existing.shape[0]} existing results from replicate numbers {matches_existing['replicate_number'].unique()}"
         )
         read_counts_insert = read_counts_insert.loc[
@@ -145,7 +152,7 @@ def insert_results(
         ].drop(columns=["_merge"])
 
         if read_counts_insert.empty:
-            print("No new results to insert")
+            logger.info("No new results to insert")
             return
 
     # Get IDs of screening results
@@ -206,7 +213,7 @@ def main():
     read_counts_df = pd.read_csv(input["input_file"])
     if "unmapped" in read_counts_df["name"].values:
         # Remove unmapped SPs
-        print("Removing unmapped counts")
+        logger.info("Removing unmapped counts")
         read_counts_df = read_counts_df.loc[read_counts_df["name"] != "unmapped", :]
 
     # Remove unmapped SPs
@@ -215,7 +222,7 @@ def main():
 
     # Development:
     if args.empty:
-        print("Emptying the database before inserting")
+        logger.info("Emptying the database before inserting")
         with engine.connect() as conn:
             conn.execute(text("DELETE FROM screening_result_replicate"))
             conn.execute(text("DELETE FROM screening_result"))
