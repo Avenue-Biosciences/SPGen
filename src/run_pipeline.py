@@ -1,5 +1,4 @@
 import argparse
-import json
 import logging
 import os
 from db_utils import get_db_config, get_db_engine
@@ -8,11 +7,6 @@ from db_upload_sequencing_results import upload_sequencing_results
 from compute_enrichment import compute_enrichment
 
 logger = logging.getLogger(__name__)
-
-
-def read_input(input_file):
-    with open(input_file, "r") as f:
-        return json.load(f)
 
 
 def main():
