@@ -207,15 +207,15 @@ def test_complete_pipeline(temp_test_dir, test_engine, monkeypatch):
     # Assert enrichment files exits
     expected_enrichment_files = set(
         [
-            "common_sps.xlsx",
-            "enrichment_factors.xlsx",
+            "common_sps_ranks.csv",
+            "common_sps_ef.csv",
+            "enrichment_factors.csv",
             "correlation_heatmap.pdf",
             "rank_pairplot.pdf",
             "rank_vs_ef.pdf",
             "SP similarities heatmap.pdf",
-            "SP similarities wide.xlsx",
+            "SP similarities wide.csv",
             "SPs.fasta",
-            "signalp",
         ]
     )
 

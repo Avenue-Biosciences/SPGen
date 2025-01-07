@@ -267,18 +267,14 @@ def compute_enrichment(
 
     save_df.to_csv(os.path.join(output_dir, "enrichment_factors.csv"), index=False)
 
-    # Create Excel writer object
-    with pd.ExcelWriter(os.path.join(output_dir, "common_sps.xlsx")) as writer:
-        # Get common SPs
-        ef_rank_columns = [col for col in df.columns if re.match(r"^EF\d+ rank$", col)]
-        if len(ef_rank_columns) > 1:
-            common_sps_ef = get_common_sps(df, ef_rank_columns)
-            common_sps_ef.to_csv(
-                os.path.join(output_dir, "common_sps_ef.csv"), index=False
-            )
-        common_sps_ranks.to_csv(
-            os.path.join(output_dir, "common_sps_ranks.csv"), index=False
-        )
+    # Get common SPs
+    ef_rank_columns = [col for col in df.columns if re.match(r"^EF\d+ rank$", col)]
+    if len(ef_rank_columns) > 1:
+        common_sps_ef = get_common_sps(df, ef_rank_columns)
+        common_sps_ef.to_csv(os.path.join(output_dir, "common_sps_ef.csv"), index=False)
+    common_sps_ranks.to_csv(
+        os.path.join(output_dir, "common_sps_ranks.csv"), index=False
+    )
 
     plot_rank_vs_ef(
         df,

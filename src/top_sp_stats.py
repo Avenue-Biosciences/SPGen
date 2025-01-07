@@ -17,6 +17,7 @@ from Bio.SeqRecord import SeqRecord
 from Bio import SeqIO
 from db_utils import get_library_sequences
 from utils import run_command
+import shutil
 
 logger = logging.getLogger(__name__)
 
@@ -286,8 +287,8 @@ def run_signalp(
     df["SP_length"] = df["amino_acid_sequence"].str.len()
     results = pd.merge(df[["name", "SP_length"]], results, on="name", how="left")
 
-    # Delete output files
-    os.removedirs(output_dir)
+    # Delete output files and directory
+    shutil.rmtree(output_dir)
 
     return results[
         [

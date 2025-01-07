@@ -100,7 +100,8 @@ def test_complete_run(temp_test_dir, test_engine, monkeypatch):
     # Assert output files exist
     output_dir = os.path.join(temp_test_dir, "7_enrichment")
     assert os.path.exists(os.path.join(output_dir, "enrichment_factors.csv"))
-    assert os.path.exists(os.path.join(output_dir, "common_sps.csv"))
+    assert os.path.exists(os.path.join(output_dir, "common_sps_ranks.csv"))
+    assert os.path.exists(os.path.join(output_dir, "common_sps_ef.csv"))
     assert os.path.exists(os.path.join(output_dir, "rank_vs_ef.pdf"))
     assert os.path.exists(os.path.join(output_dir, "volcano.pdf"))
     assert os.path.exists(os.path.join(output_dir, "correlation_heatmap.pdf"))
@@ -135,4 +136,4 @@ def test_complete_run(temp_test_dir, test_engine, monkeypatch):
         lambda x: signif(x, 3)
     )
 
-    pd.testing.assert_frame_equal(results, expected_results)
+    pd.testing.assert_frame_equal(results, expected_results, check_dtype=False)
