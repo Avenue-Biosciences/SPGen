@@ -193,8 +193,8 @@ def compute_similarities_with_tree(
         top_sps_similarities,
         os.path.join(output_dir, f"SP similarities heatmap.pdf"),
     )
-    similarities_wide.to_excel(
-        os.path.join(output_dir, f"SP similarities wide.xlsx"), index=True
+    similarities_wide.to_csv(
+        os.path.join(output_dir, f"SP similarities wide.csv"), index=True
     )
 
     # Write to FASTA and draw phylogenetic tree
@@ -285,6 +285,9 @@ def run_signalp(
 
     df["SP_length"] = df["amino_acid_sequence"].str.len()
     results = pd.merge(df[["name", "SP_length"]], results, on="name", how="left")
+
+    # Delete output files
+    os.removedirs(output_dir)
 
     return results[
         [

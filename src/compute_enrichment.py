@@ -265,7 +265,7 @@ def compute_enrichment(
         lambda x: signif(x, 3)
     )
 
-    save_df.to_excel(os.path.join(output_dir, "enrichment_factors.xlsx"), index=False)
+    save_df.to_csv(os.path.join(output_dir, "enrichment_factors.csv"), index=False)
 
     # Create Excel writer object
     with pd.ExcelWriter(os.path.join(output_dir, "common_sps.xlsx")) as writer:
@@ -273,10 +273,12 @@ def compute_enrichment(
         ef_rank_columns = [col for col in df.columns if re.match(r"^EF\d+ rank$", col)]
         if len(ef_rank_columns) > 1:
             common_sps_ef = get_common_sps(df, ef_rank_columns)
-            common_sps_ef.to_excel(
-                writer, sheet_name="Replicate Comparisons", index=False
+            common_sps_ef.to_csv(
+                os.path.join(output_dir, "common_sps_ef.csv"), index=False
             )
-        common_sps_ranks.to_excel(writer, sheet_name="Ranking Comparisons", index=False)
+        common_sps_ranks.to_csv(
+            os.path.join(output_dir, "common_sps_ranks.csv"), index=False
+        )
 
     plot_rank_vs_ef(
         df,
@@ -295,12 +297,12 @@ def compute_enrichment(
             print(e)
             print("Could not plot volcano plot")
 
-    plot_correlation_heatmap(
-        df,
-        hf_columns + ["HF mean"],
-        lf_columns + ["LF mean"],
-        os.path.join(output_dir, "correlation_heatmap.pdf"),
-    )
+        plot_correlation_heatmap(
+            df,
+            hf_columns + ["HF mean"],
+            lf_columns + ["LF mean"],
+            os.path.join(output_dir, "correlation_heatmap.pdf"),
+        )
 
     # Compute similarities and draw phylogenetic tree
     compute_similarities_with_tree(

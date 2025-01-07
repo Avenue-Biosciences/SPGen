@@ -99,14 +99,14 @@ def test_complete_run(temp_test_dir, test_engine, monkeypatch):
 
     # Assert output files exist
     output_dir = os.path.join(temp_test_dir, "7_enrichment")
-    assert os.path.exists(os.path.join(output_dir, "enrichment_factors.xlsx"))
-    assert os.path.exists(os.path.join(output_dir, "common_sps.xlsx"))
+    assert os.path.exists(os.path.join(output_dir, "enrichment_factors.csv"))
+    assert os.path.exists(os.path.join(output_dir, "common_sps.csv"))
     assert os.path.exists(os.path.join(output_dir, "rank_vs_ef.pdf"))
     assert os.path.exists(os.path.join(output_dir, "volcano.pdf"))
     assert os.path.exists(os.path.join(output_dir, "correlation_heatmap.pdf"))
 
     # Read and verify output data
-    results = pd.read_excel(os.path.join(output_dir, "enrichment_factors.xlsx"))
+    results = pd.read_csv(os.path.join(output_dir, "enrichment_factors.csv"))
     # TODO: testing p_value
     results = results.drop(
         columns=[

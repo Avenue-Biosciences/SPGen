@@ -51,3 +51,9 @@ python3 -m pip install --user --upgrade cutadapt
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
 ```
 
+To install MUSCLE:
+
+```
+wget https://github.com/rcedgar/muscle/releases/download/v5.3/muscle-osx-arm64.v5.3
+# Add to path
+```
